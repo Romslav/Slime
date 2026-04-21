@@ -25,6 +25,10 @@
 
     "StarterPlayer": {
       "$className": "StarterPlayer",
+      "$properties": {
+        "LoadCharacterAppearance": true,
+        "CharacterWalkSpeed": 32
+      },
       "StarterPlayerScripts": {
         "$path": "src/StarterPlayer/StarterPlayerScripts"
       },

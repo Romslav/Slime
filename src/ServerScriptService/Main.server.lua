@@ -6,7 +6,8 @@
 
     Порядок зависимостей:
         World       → лес, лайтинг, атмосфера
-        Platform    → сама желейная платформа (зависит от World для Anchor)
+        Monster     → МОНСТР-ПЛАТФОРМА: тело, глаза, щупальца, сегменты + физика
+                      (v3.0 полностью заменил бывший PlatformEngine)
         Data        → DataStore (независим, но нужен до Reward)
         Presence    → кто в круге (зависит от Platform)
         Reward      → валюта (зависит от Presence + Data)
@@ -31,25 +32,31 @@ require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Remotes"))
 local Modules = ServerScriptService:WaitForChild("Modules")
 
 local function tryStart(name: string, order: number): any?
-    local module = Modules:FindFirstChild(name)
-    if not module then
-        warn(string.format("[JMC][Main] Модуль %s не найден — пропускаю (этап %d)", name, order))
-        return nil
-    end
-    local ok, result = pcall(require, module)
-    if not ok then
-        warn(string.format("[JMC][Main] Ошибка require(%s): %s", name, tostring(result)))
-        return nil
-    end
-    if type(result) == "table" and type(result.Start) == "function" then
-        local okStart, err = pcall(result.Start, result)
-        if not okStart then
-            warn(string.format("[JMC][Main] %s:Start() упал: %s", name, tostring(err)))
-            return nil
-        end
-    end
-    print(string.format("[JMC][Main] ✓ %s инициализирован (этап %d)", name, order))
-    return result
+	local module = Modules:FindFirstChild(name)
+	if not module then
+		warn(
+			string.format(
+				"[JMC][Main] Модуль %s не найден — пропускаю (этап %d)",
+				name,
+				order
+			)
+		)
+		return nil
+	end
+	local ok, result = pcall(require, module)
+	if not ok then
+		warn(string.format("[JMC][Main] Ошибка require(%s): %s", name, tostring(result)))
+		return nil
+	end
+	if type(result) == "table" and type(result.Start) == "function" then
+		local okStart, err = pcall(result.Start, result)
+		if not okStart then
+			warn(string.format("[JMC][Main] %s:Start() упал: %s", name, tostring(err)))
+			return nil
+		end
+	end
+	print(string.format("[JMC][Main] ✓ %s инициализирован (этап %d)", name, order))
+	return result
 end
 
 print("[JMC][Main] =============================================")
@@ -57,20 +64,27 @@ print("[JMC][Main] Kingdom of the Jelly Monster — запуск сервера"
 print("[JMC][Main] =============================================")
 
 -- Порядок критичен — зависимости снизу-вверх
-local World      = tryStart("WorldBuilder",          1)
-local Platform   = tryStart("PlatformEngine",        2)
-local Data       = tryStart("DataService",           3)
-local Presence   = tryStart("CirclePresence",        4)
-local Reward     = tryStart("RewardService",         5)
-local Transform  = tryStart("TransformationService", 6)
-local Aura       = tryStart("AuraService",           7)
-local Ragdoll    = tryStart("RagdollService",        8)
-local Factory    = tryStart("ToolFactory",           9)
-local Events     = tryStart("EventManager",          10)
-local Shop       = tryStart("ShopService",           11)
-local Vote       = tryStart("VoteService",           12)
-local Friendship = tryStart("FriendshipMode",        13)
-local Revenge    = tryStart("RevengeService",        14)
-local Leaders    = tryStart("LeaderboardService",    15)
+local World = tryStart("WorldBuilder", 1)
+local Monster = tryStart("MonsterBodyService", 2)
+-- Пыльца вокруг монстра — после того как Core появился в мире
+if World and type(World.SpawnPollen) == "function" then
+	local okP, errP = pcall(World.SpawnPollen, World)
+	if not okP then
+		warn(string.format("[JMC][Main] WorldBuilder:SpawnPollen() упал: %s", tostring(errP)))
+	end
+end
+local Data = tryStart("DataService", 3)
+local Presence = tryStart("CirclePresence", 4)
+local Reward = tryStart("RewardService", 5)
+local Transform = tryStart("TransformationService", 6)
+local Aura = tryStart("AuraService", 7)
+local Ragdoll = tryStart("RagdollService", 8)
+local Factory = tryStart("ToolFactory", 9)
+local Events = tryStart("EventManager", 10)
+local Shop = tryStart("ShopService", 11)
+local Vote = tryStart("VoteService", 12)
+local Friendship = tryStart("FriendshipMode", 13)
+local Revenge = tryStart("RevengeService", 14)
+local Leaders = tryStart("LeaderboardService", 15)
 
 print("[JMC][Main] Все доступные системы подняты. Приятной игры!")
